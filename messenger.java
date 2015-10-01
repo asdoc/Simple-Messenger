@@ -1,9 +1,18 @@
-import java.net.*;
-import java.io.*;
-import java.util.Scanner;
-import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class messenger extends Thread
 {
@@ -18,7 +27,7 @@ public class messenger extends Thread
 	{
 
 		final JLabel message=new JLabel("Please enter ip to connect");
-		final JTextField ipui=new JTextField();
+		final JTextField ipui=new JTextField("127.0.0.1");
 		final JButton okbtn=new JButton("Connect");
 		final JTextField sendmsg=new JTextField();
 		final JButton toSend=new JButton("send");
@@ -32,8 +41,8 @@ public class messenger extends Thread
 			panel.add(ipui);
 			okbtn.setBounds(20,70,200,40);
 			panel.add(okbtn);
-			okbtn.addActionListener(new ActionListener()
-			{
+			Action okButtonAction = new AbstractAction(){
+
 				@Override
 				public void actionPerformed(ActionEvent event)
 				{
@@ -44,7 +53,9 @@ public class messenger extends Thread
 					validate();
 					afterinitialise();
 				}
-			});
+			};
+			okbtn.addActionListener(okButtonAction);
+			ipui.addActionListener(okButtonAction);
 			setTitle("Initialise");
 			setSize(250, 170);
 			setResizable(false);
@@ -64,24 +75,25 @@ public class messenger extends Thread
 			toSend.setBounds(310,100,80,30);
 			newpanel.add(toSend);
 
-			toSend.addActionListener(new ActionListener()
-			{
+			Action toSendAction = new AbstractAction(){
+
 				@Override
-				public void actionPerformed(ActionEvent event)
-				{
+				public void actionPerformed(ActionEvent e) {
 					globalmsg=sendmsg.getText();
 					Thread p=new send(port);
 					p.start();
 					sendmsg.setText("");
 				}
-				}
-				);
-				setTitle("Simple Messenger");
-				setResizable(true);
-				setSize(400, 200);
-				setResizable(true);
-				setLocationRelativeTo(null);
-				setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+			};
+			toSend.addActionListener(toSendAction);
+			sendmsg.addActionListener(toSendAction);
+			setTitle("Simple Messenger");
+			setResizable(true);
+			setSize(400, 200);
+			setResizable(true);
+			setLocationRelativeTo(null);
+			setDefaultCloseOperation(EXIT_ON_CLOSE);
 		}
 
 		public myui()
@@ -94,65 +106,65 @@ public class messenger extends Thread
 			message.setText(msgrecieved);
 		}
 	}
-   
-public static class send extends Thread
-{
-   int port;
-   public send(int a)
-   {
-	port=a;
-   }
 
-   public void run()
-   {
-		try {
-		Socket socket=new Socket(ip,port);
-		DataOutputStream out=new DataOutputStream(socket.getOutputStream());
-		String msg;
-		out.writeUTF(globalmsg);
-		out.flush();
-		socket.close();
-		}catch(IOException e){}
-   }
-}
-   public messenger(int port) throws IOException
-   {
-      serverSocket = new ServerSocket(port);
-   }
+	public static class send extends Thread
+	{
+		int port;
+		public send(int a)
+		{
+			port=a;
+		}
 
-   public void run()
-   {
-      while(true)
-      {
-         try
-         {
-            Socket server = serverSocket.accept();
-            DataInputStream in =
-                  new DataInputStream(server.getInputStream());
-	    ui.onrecieved(in.readUTF());
-            server.close();
-         }catch(SocketTimeoutException s)
-         {
-            System.out.println("Socket timed out!");
-            break;
-         }catch(IOException e)
-         {
-            e.printStackTrace();
-            break;
-         }
-      }
-   }
-   public static void main(String [] args)
-   {
-      
-      ui.setVisible(true);
-      try
-      {
-         Thread t = new messenger(port);
-         t.start();
-      }catch(IOException e)
-      {
-         e.printStackTrace();
-      }
-   }
+		public void run()
+		{
+			try {
+				Socket socket=new Socket(ip,port);
+				DataOutputStream out=new DataOutputStream(socket.getOutputStream());
+				String msg;
+				out.writeUTF(globalmsg);
+				out.flush();
+				socket.close();
+			}catch(IOException e){}
+		}
+	}
+	public messenger(int port) throws IOException
+	{
+		serverSocket = new ServerSocket(port);
+	}
+
+	public void run()
+	{
+		while(true)
+		{
+			try
+			{
+				Socket server = serverSocket.accept();
+				DataInputStream in =
+						new DataInputStream(server.getInputStream());
+				ui.onrecieved(in.readUTF());
+				server.close();
+			}catch(SocketTimeoutException s)
+			{
+				System.out.println("Socket timed out!");
+				break;
+			}catch(IOException e)
+			{
+				e.printStackTrace();
+				break;
+			}
+		}
+	}
+	public static void main(String [] args)
+	{
+
+		ui.setVisible(true);
+		try
+		{
+			Thread t = new messenger(port);
+			t.start();
+		}catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 }
